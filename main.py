@@ -10,6 +10,8 @@ CHALLENGE_CHANNEL_ID = 1061190522045214751
 MESSAGE_CHAR_LIMIT = 20
 MESSAGE_LIMIT = 10
 DATE_FORMAT = '%m/%d/%Y'
+EMBED_TITLE = 'JON CHALLENGE'
+EMBED_COLOR = 0xb70004
 pst_tz = pytz.timezone('America/Los_Angeles')
 
 
@@ -32,14 +34,28 @@ def get_formatted_content(content):
 
 
 # formats bot message output
-def format_days_posted_result(days_posted):
+# embeds are special discord messages which can have fancy formatting
+# https://cog-creators.github.io/discord-embed-sandbox/
+def get_formatted_messsage_embed(days_posted):
     res = []
     for key in days_posted:
         res.append((key, get_formatted_content(days_posted[key].content)))
     days_missed, min_date, max_date = get_days_missed(days_posted)
-    return "Successful posts: {}, Date range considered: {}, Days missed: {}, Success samples: {}".format(
-        len(days_posted), (min_date, max_date), days_missed,
-        ["{}: {}".format(a, b) for a, b in res[:MESSAGE_LIMIT]])
+    success_samples = ["{}: {}".format(a, b) for a, b in res[:MESSAGE_LIMIT]]
+    embed = discord.Embed(title=EMBED_TITLE,
+                          description=EMBED_TITLE,
+                          color=EMBED_COLOR)
+    embed.add_field(name='Successful posts',
+                    value=len(days_posted),
+                    inline=False)
+    embed.add_field(name='Date range considered',
+                    value='{} -> {}'.format(min_date, max_date),
+                    inline=True)
+    embed.add_field(name='Days missed',
+                    value='None!' if days_missed == 0 else days_missed,
+                    inline=True)
+    embed.add_field(name='Success samples', value=success_samples, inline=True)
+    return embed
 
 
 def is_weekend(date):
@@ -86,9 +102,8 @@ async def handle_command(message):
     days_posted = get_days_posted(await fetch_messages_for_channel(
         challenge_channel, 2000))
     bot_channel = client.get_channel(784787690281107517)
-    result = format_days_posted_result(days_posted)
-    print(result)
-    await bot_channel.send(result)
+    embed_message = get_formatted_messsage_embed(days_posted)
+    await bot_channel.send(embed=embed_message)
 
 
 class MyClient(discord.Client):
